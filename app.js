@@ -4,6 +4,7 @@ var bodyParser = require('body-parser');
 var mongoose = require('mongoose');
 var keys = require('./config/keys');
 var Url = require('./models/Url');
+var NewUrl = require('./models/NewUrl');
 app.use(express.static('public'));
 app.use(bodyParser.json());
 app.set('view engine', 'ejs');
@@ -14,10 +15,17 @@ mongoose.connect(keys.mongoURI);
 
 
 
+var lastUrl = [];
+var shortURL = 1;
 
-
-
-
+// NewUrl.findOne({}, function(err, doc){
+//     if(err){
+//         return console.error()
+//     }
+//     else{
+//         console.log(doc);
+//     }
+// })
 app.get('/', function(req, res){
     res.render('home');
 });
@@ -45,46 +53,76 @@ app.get('/new/:url(*)', function(req, res){
     if(!urlParam.match(regex)) {
       res.json({"error": "This is not a valid url"})
     }
-    else{
-      var shortURL = Math.floor(1000 + Math.random() * 9000).toString();
+    else {
+      //var shortURL = Math.floor(1000 + Math.random() * 9000).toString();
+      
+      
+        NewUrl.findOne({}, (err, doc) => {
+            if(err) {
+                return console.error(err);
+            }
+            else if(doc == null) {
+                new NewUrl({
+                    originalUrl: urlParam,
+                    shortenedUrl: shortURL.toString()
+                }).save(function(err, doc){
+                    if(err){
+                      return console.error(err);
+                    }
+                  });
 
-
-      Url.findOne({"shortenedUrl": shortURL}, function(err, doc) {
-          if(doc == null) {
-            new Url({
-                originalUrl: urlParam,
-                shortenedUrl: shortURL
-            }).save(function(err, doc){
-                if(err){
-                  return console.error(err);
-                }
-                res.json({
-                    "originalUrl" :urlParam,
-                    "shortUrl" : "localhost:3000/" + shortURL
+                new Url({
+                    originalUrl: urlParam,
+                    shortenedUrl: shortURL.toString()
+                }).save(function(err, doc){
+                    if(err){
+                      return console.error(err);
+                    }
+                    res.json({
+                        "originalUrl" :urlParam,
+                        "shortUrl" : "localhost:3000/" + shortURL
+                    });
+        
+                  });
+            }
+            else{
+                var updateShortUrl = parseInt(doc.shortenedUrl) + 1;
+                new NewUrl({
+                    originalUrl: urlParam,
+                    shortenedUrl: updateShortUrl.toString()
+                }).save(function(err, doc){
+                    if(err){
+                      return console.error(err);
+                    }
+        
+                  });
+                
+                NewUrl.remove({}, function(err, doc){
+                    if(err){
+                        return console.error(err);
+                    }
+                })
+                
+                new Url({
+                    originalUrl: urlParam,
+                    shortenedUrl: updateShortUrl.toString()
+                }).save(function(err, doc){
+                    if(err){
+                      return console.error(err);
+                    }
+                    res.json({
+                        "originalUrl" :urlParam,
+                        "shortUrl" : "localhost:3000/" + updateShortUrl
+                    });
+        
                 });
-
-              });
-          }
-
-          else{
-            shortURL = Math.floor(1000 + Math.random() * 9000).toString();
-            new Url({
-                originalUrl: urlParam,
-                shortenedUrl: shortURL
-            }).save(function(err, doc){
-                if(err){
-                  return console.error(err);
-                }
-                res.json({
-                    "originalUrl" :urlParam,
-                    "shortUrl" : "localhost:3000/" + shortURL
-                });
-
-
-              });
-          }
-      });
-
+                
+            }
+        });
+        
+      
+      
+      
     }
   });
 
