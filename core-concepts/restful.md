@@ -7,7 +7,6 @@ There are some important features of REST. Here are some of them.
 * Representation
 * Messages
 * URI's
-* Uniform interface
 * Stateless
 * Links between resources
 * Caching
